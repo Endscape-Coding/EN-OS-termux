@@ -292,54 +292,191 @@ setup_launcher() {
 RED='\033[1;31m'
 GREEN='\033[1;32m'
 ORANGE='\033[1;33m'
+BLUE='\033[1;34m'
+PURPLE='\033[1;35m'
 NC='\033[0m'
 
 # Export Display
 export DISPLAY="$display"
 
-cleanup_vnc() {
-    echo -e "\${ORANGE}[*] Cleaning up VNC temp files...\${NC}"
-    rm -rf /tmp/.X11-unix/X1
+cleanup_all_vnc() {
+    echo -e "\${PURPLE}[*] Performing complete VNC cleanup...\${NC}"
+    
+    # Останавливаем все VNC сессии
+    vncserver -list 2>/dev/null | grep -o ":[0-9]*" | while read session; do
+        echo -e "\${ORANGE}[*] Killing VNC session \$session\${NC}"
+        vncserver -kill "\$session" 2>/dev/null
+    done
+    
+    # Убиваем все VNC процессы
+    pkill -f "Xvnc" 2>/dev/null
+    pkill -f "vncserver" 2>/dev/null
+    
+    # Даем процессам время завершиться
+    sleep 3
+    
+    # Принудительно убиваем оставшиеся процессы
+    local remaining_pids=\$(pgrep -f "Xvnc" 2>/dev/null)
+    if [[ -n "\$remaining_pids" ]]; then
+        echo -e "\${RED}[*] Force killing remaining VNC processes...\${NC}"
+        kill -9 \$remaining_pids 2>/dev/null
+    fi
+    
+    # Очищаем ВСЕ возможные lock файлы и директории
+    echo -e "\${ORANGE}[*] Removing all lock files and directories...\${NC}"
+    
+    # Удаляем X11 unix sockets
+    rm -rf /tmp/.X11-unix/*
+    rm -rf /data/data/com.termux/files/usr/tmp/.X11-unix/*
+    
+    # Удаляем lock файлы для всех дисплеев
+    find /tmp -name ".X[0-9]*-lock" -delete 2>/dev/null
+    find /tmp -name ".Xlock" -delete 2>/dev/null
+    find /data/data/com.termux/files/usr/tmp -name ".X[0-9]*-lock" -delete 2>/dev/null
+    find /data/data/com.termux/files/tmp -name ".X[0-9]*-lock" -delete 2>/dev/null
+    
+    # Удаляем специфичные для :1 файлы
     rm -rf /tmp/.X1-lock
+    rm -rf /data/data/com.termux/files/usr/tmp/.X1-lock
+    rm -rf /data/data/com.termux/files/tmp/.X1-lock
+    rm -rf /tmp/.X11-unix/X1
+    rm -rf /data/data/com.termux/files/usr/tmp/.X11-unix/X1
+    
+    # Очищаем VNC файлы в домашней директории
     rm -rf \$HOME/.vnc/*.log
     rm -rf \$HOME/.vnc/*.pid
+    rm -rf \$HOME/.vnc/*.lock
+    
+    # Очищаем X authority файлы
+    rm -rf \$HOME/.Xauthority*
+    
+    sleep 2
+}
+
+force_kill_vnc() {
+    echo -e "\${RED}[*] Force killing ALL VNC processes...\${NC}"
+    
+    # Убиваем все процессы связанные с VNC
+    pkill -9 -f "Xvnc" 2>/dev/null
+    pkill -9 -f "vncserver" 2>/dev/null
+    
+    sleep 2
+}
+
+check_vnc_running() {
+    # Проверяем запущен ли VNC сервер на указанном дисплее
+    if pgrep -f "Xvnc.*$display" > /dev/null; then
+        return 0
+    fi
+    
+    # Проверяем через vncserver -list
+    local vnc_list=\$(vncserver -list 2>/dev/null | grep "^$display")
+    if [[ -n "\$vnc_list" ]]; then
+        return 0
+    fi
+    
+    # Проверяем наличие lock файлов для :1
+    if [[ -f "/data/data/com.termux/files/usr/tmp/.X1-lock" ]] || \
+       [[ -f "/tmp/.X1-lock" ]] || \
+       [[ -f "/data/data/com.termux/files/usr/tmp/.X11-unix/X1" ]] || \
+       [[ -f "\$HOME/.vnc/$(hostname):1.pid" ]]; then
+        return 0
+    fi
+    
+    return 1
 }
 
 start_vnc_server() {
     echo -e "\${GREEN}[*] Starting VNC Server on display $display (port $vnc_port)...\${NC}"
     
-    # Очищаем старые temp файлы перед запуском
-    cleanup_vnc
+    # Полная очистка перед запуском
+    cleanup_all_vnc
     
-    # Запускаем VNC сервер с фиксированным портом
-    vncserver "$display" -geometry 1280x720 -depth 24 -name "termux-desktop"
+    # Ждем после очистки
+    sleep 3
     
-    if [[ \$? -eq 0 ]]; then
+    # Проверяем, не осталось ли lock файлов
+    if [[ -f "/data/data/com.termux/files/usr/tmp/.X1-lock" ]]; then
+        echo -e "\${ORANGE}[!] Lock file still exists, removing...\${NC}"
+        rm -f "/data/data/com.termux/files/usr/tmp/.X1-lock"
+    fi
+    
+    # Запускаем VNC сервер
+    local output=\$(vncserver "$display" -geometry 1280x720 -depth 24 -name "termux-desktop" -localhost no 2>&1)
+    local result=\$?
+    
+    if [[ \$result -eq 0 ]]; then
         echo -e "\${GREEN}[+] VNC Server started successfully\${NC}"
-        echo -e "\${ORANGE}[*] Connect using: localhost:$vnc_port\${NC}"
+        echo -e "\${BLUE}[*] Connect using: localhost:$vnc_port\${NC}"
+        echo -e "\${BLUE}[*] For remote connection use your device IP\${NC}"
+        return 0
     else
         echo -e "\${RED}[!] Failed to start VNC Server\${NC}"
-        # Пытаемся убить зависшие процессы и перезапустить
-        killall Xvnc 2>/dev/null
-        sleep 2
-        cleanup_vnc
-        vncserver "$display" -geometry 1280x720 -depth 24
+        echo -e "\${ORANGE}[*] Output: \$output\${NC}"
+        
+        # Если failed из-за lock файла, пытаемся очистить и перезапустить
+        if echo "\$output" | grep -q "is taken"; then
+            echo -e "\${PURPLE}[*] Detected lock file issue, performing deep clean...\${NC}"
+            cleanup_all_vnc
+            sleep 2
+            
+            echo -e "\${GREEN}[*] Retrying VNC startup...\${NC}"
+            if vncserver "$display" -geometry 1024x768 -depth 24 -localhost no; then
+                echo -e "\${GREEN}[+] VNC Server started successfully (after retry)\${NC}"
+                return 0
+            fi
+        fi
+        
+        return 1
     fi
 }
 
 stop_vnc_server() {
     echo -e "\${ORANGE}[*] Stopping VNC Server...\${NC}"
-    vncserver -kill "$display" 2>/dev/null
-    killall Xvnc 2>/dev/null
-    cleanup_vnc
+    cleanup_all_vnc
     echo -e "\${GREEN}[+] VNC Server stopped\${NC}"
 }
 
-# Проверяем, запущен ли VNC сервер
-if pgrep -f "Xvnc.*$display" > /dev/null; then
-    echo -e "\${ORANGE}\n[!] VNC Server is already running on $display\${NC}"
-    echo -e "\${GREEN}[*] Active VNC sessions:\${NC}"
-    vncserver -list
+show_vnc_status() {
+    echo -e "\${BLUE}[*] Current VNC sessions:\${NC}"
+    local sessions=\$(vncserver -list 2>/dev/null)
+    if [[ -n "\$sessions" ]]; then
+        echo "\$sessions"
+    else
+        echo "    No active VNC sessions"
+    fi
+    
+    echo -e "\${BLUE}[*] Running VNC processes:\${NC}"
+    local processes=\$(pgrep -af "Xvnc" 2>/dev/null)
+    if [[ -n "\$processes" ]]; then
+        echo "\$processes"
+    else
+        echo "    No VNC processes running"
+    fi
+    
+    echo -e "\${BLUE}[*] Lock files for :1:\${NC}"
+    local lock_files=0
+    for file in "/tmp/.X1-lock" "/data/data/com.termux/files/usr/tmp/.X1-lock" "/data/data/com.termux/files/tmp/.X1-lock"; do
+        if [[ -f "\$file" ]]; then
+            echo "    Found: \$file"
+            lock_files=1
+        fi
+    done
+    [[ \$lock_files -eq 0 ]] && echo "    No lock files found"
+}
+
+# Основная логика
+echo -e "\${PURPLE}"
+cat << "EOF"
+╔═══════════════════════════════════════╗
+║           EN-OS VNC Manager           ║
+╚═══════════════════════════════════════╝
+EOF
+echo -e "\${NC}"
+
+if check_vnc_running; then
+    echo -e "\${ORANGE}[!] VNC Server appears to be running on $display\${NC}"
+    show_vnc_status
     
     echo
     read -p "Do you want to restart VNC server? (y/N): " choice
@@ -347,20 +484,24 @@ if pgrep -f "Xvnc.*$display" > /dev/null; then
         y|Y)
             stop_vnc_server
             sleep 2
-            start_vnc_server
+            if start_vnc_server; then
+                echo -e "\${GREEN}[+] VNC Server restarted successfully\${NC}"
+            else
+                echo -e "\${RED}[!] Failed to restart VNC Server\${NC}"
+                echo -e "\${ORANGE}[*] Try running: reset-vnc\${NC}"
+            fi
             ;;
         *)
-            echo -e "\${GREEN}[*] Keeping current session running\${NC}"
+            echo -e "\${GREEN}[*] Keeping current session\${NC}"
             ;;
     esac
 else
-    # Проверяем наличие старых lock файлов
-    if [[ -f "/tmp/.X1-lock" ]] || [[ -f "\$HOME/.vnc/$(hostname):1.pid" ]]; then
-        echo -e "\${ORANGE}[!] Found stale lock files, cleaning up...\${NC}"
-        cleanup_vnc
+    echo -e "\${GREEN}[*] No VNC server running on $display, starting fresh...\${NC}"
+    if start_vnc_server; then
+        echo -e "\${GREEN}[+] VNC Server started successfully\${NC}"
+    else
+        echo -e "\${RED}[!] Failed to start VNC Server\${NC}"
     fi
-    
-    start_vnc_server
 fi
 
 echo -e "\${GREEN}[*] Done!\${NC}"
@@ -376,21 +517,56 @@ _EOF_
         return 1
     fi
     
-    # Добавляем PATH если еще не добавлен
-    local path_entry="export PATH=\"\${PATH}:\${HOME}/.local/bin\""
-    if ! grep -q "export PATH.*\.local/bin" "${PREFIX}/etc/profile"; then
-        echo "$path_entry" >> "${PREFIX}/etc/profile"
-        echo -e "${GREEN}[*] \$PATH reference ${ORANGE}~/.local/bin ${GREEN}added to /etc/profile successfully.${NC}"
-    else
-        echo -e "${ORANGE}[*] \$PATH reference already exists in /etc/profile${NC}"
-    fi
-    
-    # Создаем алиас для удобства
-    if ! grep -q "alias startdesktop" "${PREFIX}/etc/bash.bashrc" 2>/dev/null; then
-        echo "alias startdesktop='~/.local/bin/startdesktop'" >> "${PREFIX}/etc/bash.bashrc"
-    fi
+    # Создаем утилиту для полного сброса
+    create_reset_script
     
     echo -e "${GREEN}[+] Setup completed! You can now run 'startdesktop'${NC}"
+}
+
+create_reset_script() {
+    local reset_file="$HOME/.local/bin/reset-vnc"
+    
+    cat > "$reset_file" << _EOF_
+#!/data/data/com.termux/files/usr/bin/bash
+
+echo "=========================================="
+echo "    COMPLETE VNC RESET UTILITY"
+echo "=========================================="
+
+echo "[1] Killing all VNC processes..."
+pkill -9 -f "Xvnc" 2>/dev/null
+pkill -9 -f "vncserver" 2>/dev/null
+
+echo "[2] Stopping all VNC sessions..."
+vncserver -list 2>/dev/null | grep -o ":[0-9]*" | while read session; do
+    echo "    Killing session \$session"
+    vncserver -kill "\$session" 2>/dev/null
+done
+
+echo "[3] Removing all lock files..."
+rm -rf /tmp/.X11-unix/*
+rm -rf /tmp/.X[0-9]*-lock
+rm -rf /data/data/com.termux/files/usr/tmp/.X11-unix/*
+rm -rf /data/data/com.termux/files/usr/tmp/.X[0-9]*-lock
+rm -rf /data/data/com.termux/files/tmp/.X[0-9]*-lock
+rm -rf \$HOME/.vnc/*.log
+rm -rf \$HOME/.vnc/*.pid
+rm -rf \$HOME/.vnc/*.lock
+rm -rf \$HOME/.Xauthority*
+
+echo "[4] Final cleanup..."
+sleep 2
+pkill -9 -f "Xvnc" 2>/dev/null
+
+echo "=========================================="
+echo "    VNC RESET COMPLETE!"
+echo "    You can now run: startdesktop"
+echo "=========================================="
+_EOF_
+
+    chmod +x "$reset_file"
+    echo -e "${GREEN}[*] Reset utility created: ${ORANGE}reset-vnc${NC}"
+    echo -e "${YELLOW}[*] Use 'reset-vnc' if you encounter persistent VNC issues${NC}"
 }
 
 ## Finish Installation
