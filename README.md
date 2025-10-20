@@ -1,10 +1,6 @@
 ---
-
-### РУССКАЯ ВЕРСИЯ (RUSSIAN VERSION)
-
-**`ПОСЛЕДНЕЕ ОБНОВЛЕНИЕ`** : `Август 2024`
-**`ОФИЦИАЛЬНЫЙ РЕПОЗИТОРИЙ`** : [https://github.com/Endscape-Coding/EN-OS-termux](https://github.com/Endscape-Coding/EN-OS-termux)
-
+last_updated: August 2024
+official_repository: https://github.com/Endscape-Coding/EN-OS-termux
 ---
 
 ![logo](./previews/logo.png) <br />
