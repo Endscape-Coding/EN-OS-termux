@@ -10,13 +10,14 @@
 
 ![logo](./previews/logo.png) <br />
 
-<p align="center">
-  <img src="https://img.shields.io/github/license/Endscape-Coding/EN-OS-termux?style=for-the-badge&label=Лицензия&color=blue">
-  <img src="https://img.shields.io/github/v/release/Endscape-Coding/EN-OS-termux?style=for-the-badge&label=Версия&color=green">
-  <img src="https://img.shields.io/github/issues/Endscape-Coding/EN-OS-termux?color=violet&style=for-the-badge&label=Проблемы">
-  <img src="https://img.shields.io/github/forks/Endscape-Coding/EN-OS-termux?color=teal&style=for-the-badge&label=Форки">
-  <img src="https://img.shields.io/github/stars/Endscape-Coding/EN-OS-termux?style=for-the-badge&label=Звёзды">
-</p>
+[![Status](https://img.shields.io/badge/🟢-Active-brightgreen?style=for-the-badge)](#)
+[![Version](https://img.shields.io/badge/v1.0.0-Stable-success?style=for-the-badge)](#)
+[![Platform](https://img.shields.io/badge/Android-Termux-3DDC84?style=for-the-badge&logo=android)](#)
+[![Desktop](https://img.shields.io/badge/Openbox-WM-FF6D00?style=for-the-badge&logo=linux)](#)
+
+[![GitHub](https://img.shields.io/badge/Repo-EN--OS-6e48aa?style=for-the-badge&logo=github)](https://github.com/Endscape-Coding/EN-OS-termux)
+[![Maintainer](https://img.shields.io/badge/By-Endscape-orange?style=for-the-badge)](#)
+[![License](https://img.shields.io/badge/GPL-v3.0-blue?style=for-the-badge)](LICENSE)
 
 ## EN-OS Termux Desktop (Fork by Endscape)
 
