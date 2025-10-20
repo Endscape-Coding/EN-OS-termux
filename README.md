@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/github/stars/Endscape-Coding/EN-OS-termux?style=for-the-badge&label=Звёзды">
 </p>
 
-## EN/OS Termux Desktop (Fork by Endscape)
+## EN-OS Termux Desktop (Fork by Endscape)
 
 Добро пожаловать в форк легендарного **Termux Desktop** — **EN/OS**! Этот проект начинался как коллекция файлов конфигурации от [adi1090x](https://github.com/adi1090x/termux-desktop), но теперь он получил второе дыхание под моим руководством, **Endscape**.
 
@@ -43,6 +43,10 @@ Termux — это *эмулятор терминала для Android* и при
 >
 > Устройство - **Redmi Note 9 Pro** <br />
 > Android - **Android 10 (Q)** <br />
+> Тип CPU - **aarch64**
+> 
+> Устройство - **Infinix note 30 Ultra** <br />
+> Android - **Android 15** <br />
 > Тип CPU - **aarch64**
 
 ### Установка
