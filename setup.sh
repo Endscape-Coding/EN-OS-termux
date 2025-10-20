@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
-## Author  : Aditya Shakya (adi1090x)
+## Author  : Aditya Shakya (adi1090x), Fork for Endscape
 ## Mail    : adi1090x@gmail.com
 ## Github  : @adi1090x
 ## Twitter : @adi1090x
@@ -35,13 +35,25 @@ trap exit_on_signal_SIGTERM SIGTERM
 ## Banner
 banner() {
 	clear
+	cat <<- EOF
+${RED}	            ┌──────────────────────────┐
+${BLUE}				   ░█▀▀░█▀█░░░░░█▀█░█▀▀░░  
+${BLUE}	               ░█▀▀░█░█░▄▄▄░█░█░▀▀█░░  
+${BLUE}				   ░▀▀▀░▀░▀░░░░░▀▀▀░▀▀▀░░  
+${RED}                ─────────────────────────────
+${GREEN}	░▀█▀░█▀▀░█▀▄░█▄█░█░█░█░█░░░█▀▄░█▀▀░█▀▀░█░█░▀█▀░█▀█░█▀█
+${GREEN}	░░█░░█▀▀░█▀▄░█░█░█░█░▄▀▄░░░█░█░█▀▀░▀▀█░█▀▄░░█░░█░█░█▀▀
+${GREEN}	░░▀░░▀▀▀░▀░▀░▀░▀░▀▀▀░▀░▀░░░▀▀░░▀▀▀░▀▀▀░▀░▀░░▀░░▀▀▀░▀░░
+${RED} └──────────────────────────────────────────────────────────┘
+        ${BLUE}By : Endscape // @Endscape
+ 
     cat <<- EOF
 		${RED}┌──────────────────────────────────────────────────────────┐
 		${RED}│${GREEN}░░░▀█▀░█▀▀░█▀▄░█▄█░█░█░█░█░░░█▀▄░█▀▀░█▀▀░█░█░▀█▀░█▀█░█▀█░░${RED}│
 		${RED}│${GREEN}░░░░█░░█▀▀░█▀▄░█░█░█░█░▄▀▄░░░█░█░█▀▀░▀▀█░█▀▄░░█░░█░█░█▀▀░░${RED}│
 		${RED}│${GREEN}░░░░▀░░▀▀▀░▀░▀░▀░▀░▀▀▀░▀░▀░░░▀▀░░▀▀▀░▀▀▀░▀░▀░░▀░░▀▀▀░▀░░░░${RED}│
 		${RED}└──────────────────────────────────────────────────────────┘
-		${BLUE}By : Aditya Shakya // @adi1090x
+		
 	EOF
 }
 
@@ -54,13 +66,13 @@ usage() {
 
 ## Update, X11-repo, Program Installation
 _pkgs=(bc bmon calc calcurse curl dbus desktop-file-utils elinks feh fontconfig-utils fsmon \
-		geany git gtk2 gtk3 htop imagemagick jq leafpad man mpc mpd mutt ncmpcpp \
-		ncurses-utils neofetch netsurf obconf openbox openssl-tool polybar ranger rofi \
+		geany git gtk2 gtk3 htop imagemagick jq leafpad mandoc mpc mpd mutt ncmpcpp \
+		ncurses-utils neofetch netsurf obconf-qt openbox openssl-tool polybar ranger rofi \
 		startup-notification termux-api thunar tigervnc vim wget xarchiver xbitmaps xcompmgr \
 		xfce4-settings xfce4-terminal xmlstarlet xorg-font-util xorg-xrdb zsh)
 
 setup_base() {
-	echo -e ${RED}"\n[*] Installing Termux Desktop..."
+	echo -e ${RED}"\n[*] Installing EN-OS Termux Desktop..."
 	echo -e ${CYAN}"\n[*] Updating Termux Base... \n"
 	{ reset_color; pkg autoclean; pkg update -y; pkg upgrade -y; }
 	echo -e ${CYAN}"\n[*] Enabling Termux X11-repo... \n"
@@ -259,45 +271,125 @@ setup_vnc() {
 
 ## Create Launch Script
 setup_launcher() {
-	file="$HOME/.local/bin/startdesktop"
-	if [[ -f "$file" ]]; then
-		rm -rf "$file"
-	fi
-	echo -e ${RED}"\n[*] Creating Launcher Script... \n"
-	{ reset_color; touch $file; chmod +x $file; }
-	cat > $file <<- _EOF_
-		#!/data/data/com.termux/files/usr/bin/bash
+    local file="$HOME/.local/bin/startdesktop"
+    local display=":1"
+    local vnc_port="5901"
+    
+    # Создаем директорию если не существует
+    mkdir -p "$(dirname "$file")"
+    
+    # Удаляем старый файл если существует
+    [[ -f "$file" ]] && rm -f "$file"
+    
+    echo -e "${RED}\n[*] Creating Launcher Script...${NC}"
+    
+    # Создаем скрипт запуска
+    cat > "$file" << _EOF_
+#!/data/data/com.termux/files/usr/bin/bash
 
-		# Export Display
-		export DISPLAY=":1"
+# Colors for output
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+ORANGE='\033[1;33m'
+NC='\033[0m'
 
-		# Start VNC Server
-		if [[ \$(pidof Xvnc) ]]; then
-		    echo -e "\\n[!] Server Already Running."
-		    { vncserver -list; echo; }
-		    read -p "Kill VNC Server? (Y/N) : "
-		    if [[ "\$REPLY" == "Y" || "\$REPLY" == "y" ]]; then
-		        { killall Xvnc; echo; }
-		    else
-		        echo
-		    fi
-		else
-		    echo -e "\\n[*] Starting VNC Server..."
-		    vncserver
-		fi
-	_EOF_
-	if [[ -f "$file" ]]; then
-		echo -e ${GREEN}"[*] Script ${ORANGE}$file ${GREEN}created successfully."
-	fi
-	
-	# defining PATH reference for ~/.local/bin in /etc/profile
-	# to avoid issues with launching the whole script, when zsh / oh-my-zsh fails to install
-	#   ref: https://github.com/adi1090x/termux-desktop/issues/99
-	echo "export PATH=${PATH}:${HOME}/.local/bin" >> ${PREFIX}/etc/profile
-	
-	if [[ $(grep "export PATH.*/home/.local/bin" ${PREFIX}/etc/profile | wc -l) > 0 ]]; then
-		echo -e ${GREEN}"[*] \$PATH reference ${ORANGE}~/.local/bin ${GREEN}added to /etc/profile successfully."
-	fi
+# Export Display
+export DISPLAY="$display"
+
+cleanup_vnc() {
+    echo -e "\${ORANGE}[*] Cleaning up VNC temp files...\${NC}"
+    rm -rf /tmp/.X11-unix/X1
+    rm -rf /tmp/.X1-lock
+    rm -rf \$HOME/.vnc/*.log
+    rm -rf \$HOME/.vnc/*.pid
+}
+
+start_vnc_server() {
+    echo -e "\${GREEN}[*] Starting VNC Server on display $display (port $vnc_port)...\${NC}"
+    
+    # Очищаем старые temp файлы перед запуском
+    cleanup_vnc
+    
+    # Запускаем VNC сервер с фиксированным портом
+    vncserver "$display" -geometry 1280x720 -depth 24 -name "termux-desktop"
+    
+    if [[ \$? -eq 0 ]]; then
+        echo -e "\${GREEN}[+] VNC Server started successfully\${NC}"
+        echo -e "\${ORANGE}[*] Connect using: localhost:$vnc_port\${NC}"
+    else
+        echo -e "\${RED}[!] Failed to start VNC Server\${NC}"
+        # Пытаемся убить зависшие процессы и перезапустить
+        killall Xvnc 2>/dev/null
+        sleep 2
+        cleanup_vnc
+        vncserver "$display" -geometry 1280x720 -depth 24
+    fi
+}
+
+stop_vnc_server() {
+    echo -e "\${ORANGE}[*] Stopping VNC Server...\${NC}"
+    vncserver -kill "$display" 2>/dev/null
+    killall Xvnc 2>/dev/null
+    cleanup_vnc
+    echo -e "\${GREEN}[+] VNC Server stopped\${NC}"
+}
+
+# Проверяем, запущен ли VNC сервер
+if pgrep -f "Xvnc.*$display" > /dev/null; then
+    echo -e "\${ORANGE}\n[!] VNC Server is already running on $display\${NC}"
+    echo -e "\${GREEN}[*] Active VNC sessions:\${NC}"
+    vncserver -list
+    
+    echo
+    read -p "Do you want to restart VNC server? (y/N): " choice
+    case "\$choice" in
+        y|Y)
+            stop_vnc_server
+            sleep 2
+            start_vnc_server
+            ;;
+        *)
+            echo -e "\${GREEN}[*] Keeping current session running\${NC}"
+            ;;
+    esac
+else
+    # Проверяем наличие старых lock файлов
+    if [[ -f "/tmp/.X1-lock" ]] || [[ -f "\$HOME/.vnc/$(hostname):1.pid" ]]; then
+        echo -e "\${ORANGE}[!] Found stale lock files, cleaning up...\${NC}"
+        cleanup_vnc
+    fi
+    
+    start_vnc_server
+fi
+
+echo -e "\${GREEN}[*] Done!\${NC}"
+_EOF_
+
+    # Устанавливаем права выполнения
+    chmod +x "$file"
+    
+    if [[ -f "$file" ]]; then
+        echo -e "${GREEN}[*] Script ${ORANGE}$file ${GREEN}created successfully.${NC}"
+    else
+        echo -e "${RED}[!] Failed to create script $file${NC}"
+        return 1
+    fi
+    
+    # Добавляем PATH если еще не добавлен
+    local path_entry="export PATH=\"\${PATH}:\${HOME}/.local/bin\""
+    if ! grep -q "export PATH.*\.local/bin" "${PREFIX}/etc/profile"; then
+        echo "$path_entry" >> "${PREFIX}/etc/profile"
+        echo -e "${GREEN}[*] \$PATH reference ${ORANGE}~/.local/bin ${GREEN}added to /etc/profile successfully.${NC}"
+    else
+        echo -e "${ORANGE}[*] \$PATH reference already exists in /etc/profile${NC}"
+    fi
+    
+    # Создаем алиас для удобства
+    if ! grep -q "alias startdesktop" "${PREFIX}/etc/bash.bashrc" 2>/dev/null; then
+        echo "alias startdesktop='~/.local/bin/startdesktop'" >> "${PREFIX}/etc/bash.bashrc"
+    fi
+    
+    echo -e "${GREEN}[+] Setup completed! You can now run 'startdesktop'${NC}"
 }
 
 ## Finish Installation
