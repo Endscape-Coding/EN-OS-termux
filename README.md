@@ -1,6 +1,11 @@
+
 ---
-last_updated: August 2024
-official_repository: https://github.com/Endscape-Coding/EN-OS-termux
+
+### РУССКАЯ ВЕРСИЯ (RUSSIAN VERSION)
+
+**`ПОСЛЕДНЕЕ ОБНОВЛЕНИЕ`** : `20.10.2025`
+**`ОФИЦИАЛЬНЫЙ РЕПОЗИТОРИЙ`** : [https://github.com/Endscape-Coding/EN-OS-termux](https://github.com/Endscape-Coding/EN-OS-termux)
+
 ---
 
 ![logo](./previews/logo.png) <br />
@@ -310,6 +315,10 @@ Install `Termux` & `Termux:API` on your phone. It's highly recommended to instal
 >
 > Device - **Redmi Note 9 Pro** <br />
 > Android - **Android 10 (Q)** <br />
+> CPU Type - **aarch64**
+> 
+> Device - **Infinix Note 30** <br />
+> Android - **Android 15** <br />
 > CPU Type - **aarch64**
 
 ### Installation
