@@ -1,9 +1,10 @@
 #!/data/data/com.termux/files/usr/bin/bash
 
-## Author  : Aditya Shakya (adi1090x), Fork for Endscape
-## Mail    : adi1090x@gmail.com
-## Github  : @adi1090x
-## Twitter : @adi1090x
+## Author  : Aditya Shakya (adi1090x) | Fork for Endscape
+## Mail    : adi1090x@gmail.com | endscape.coding@gmail.com
+## Github  : @adi1090x | @Endscape
+## Twitter : @adi1090x | None
+## Telegram: none | https://t.me/Linux_EN_OS
 
 ## Termux Desktop : Setup GUI in Termux 
 
