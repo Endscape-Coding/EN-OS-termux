@@ -47,7 +47,7 @@ Termux — это *эмулятор терминала для Android* и при
 > Android - **Android 10 (Q)** <br />
 > Тип CPU - **aarch64**
 > 
-> Устройство - **Infinix note 30 Ultra** <br />
+> Устройство - **Infinix note 30** <br />
 > Android - **Android 15** <br />
 > Тип CPU - **aarch64**
 
